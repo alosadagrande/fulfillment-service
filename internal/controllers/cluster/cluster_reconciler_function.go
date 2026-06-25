@@ -207,18 +207,23 @@ func (t *task) update(ctx context.Context) error {
 
 	// Create or update the Kubernetes object:
 	if object == nil {
-		object := &osacv1alpha1.ClusterOrder{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:    t.hubNamespace,
-				GenerateName: objectPrefix,
-				Labels: map[string]string{
-					labels.ClusterOrderUuid: t.cluster.GetId(),
-				},
-				Annotations: map[string]string{
-					annotations.Tenant: t.cluster.GetMetadata().GetTenant(),
-				},
+		objectMeta := metav1.ObjectMeta{
+			Namespace: t.hubNamespace,
+			Labels: map[string]string{
+				labels.ClusterOrderUuid: t.cluster.GetId(),
 			},
-			Spec: spec,
+			Annotations: map[string]string{
+				annotations.Tenant: t.cluster.GetMetadata().GetTenant(),
+			},
+		}
+		if name := t.cluster.GetMetadata().GetName(); name != "" {
+			objectMeta.Name = name
+		} else {
+			objectMeta.GenerateName = objectPrefix
+		}
+		object := &osacv1alpha1.ClusterOrder{
+			ObjectMeta: objectMeta,
+			Spec:       spec,
 		}
 		err = t.hubClient.Create(ctx, object)
 		if err != nil {
